@@ -1,6 +1,3 @@
-RewriteEngine On  
-  
-RewriteCond %{SCRIPT_FILENAME} !-d  
-RewriteCond %{SCRIPT_FILENAME} !-f  
+RewriteEngine On
 
-RewriteRule ^(.*)$ ./index.php?route=$1
+RewriteRule .* index.php [L,QSA]
