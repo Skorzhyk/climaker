@@ -1,9 +1,12 @@
 <?php
 
 require_once 'Model/API.php';
+require_once 'DataBase.php';
 
 class User extends API
 {
+    private $db;
+
     private $id;
 
     private $email;
@@ -16,15 +19,19 @@ class User extends API
 
     private $telephoneNumber;
 
+    const TABLE_NAME = 'user';
+
     /**
      * User constructor.
      */
     public function __construct()
     {
+        $this->db = DataBase::getDB();
         $this->rules = [
-            'create' => 'create',
-            'edit' => 'edit',
-            'login' => 'login'
+            'create' => 'apiCreate',
+            'edit' => 'apiEdit',
+            'get' => 'apiGet',
+            'login' => 'apiLogin'
         ];
     }
 
@@ -124,35 +131,108 @@ class User extends API
         $this->telephoneNumber = $telephoneNumber;
     }
 
-    public function create($params) {
-        $this->setName($params['name']);
-        $this->setSurname($params['surname']);
-        $this->setTelephoneNumber($params['telephone_number']);
-        $this->setPassword($params['password']);
-
-        $this->save();
-    }
-
     public function edit($params) {
         $this->get($params['id']);
-        $this->setName($params['name']);
-        $this->setSurname($params['surname']);
-        $this->setTelephoneNumber($params['telephone_number']);
-        $this->setPassword($params['password']);
+
+        if (!empty($params['name'])) {
+            $this->setName($params['name']);
+        }
+
+        if (!empty($params['surname'])) {
+            $this->setSurname($params['surname']);
+        }
+
+        if (!empty($params['telephone_number'])) {
+            $this->setTelephoneNumber($params['telephone_number']);
+        }
+
+        if (!empty($params['email'])) {
+            $this->setEmail($params['email']);
+        }
+
+        if (!empty($params['new_password'])) {
+            $this->setPassword($params['new_password']);
+        }
 
         $this->save();
     }
 
-    public function login($params) {
+    public function get($id) {
+        $user = $this->db->selectRow(
+            "SELECT * FROM " . self::TABLE_NAME . " WHERE id = " . DataBase::SYM_QUERY,
+            [$id]
+        );
 
+        $this->setId($id);
+        $this->setName($user['name']);
+        $this->setSurname($user['surname']);
+        $this->setEmail($user['email']);
+        $this->setTelephoneNumber($user['telephone_number']);
+        $this->setPassword($user['password']);
+
+        return $user;
     }
 
-    public function get($params) {
+    public function getByEmail($email) {
+        $user = $this->db->selectRow(
+            "SELECT * FROM " . self::TABLE_NAME . " WHERE email = " . DataBase::SYM_QUERY,
+            [$email]
+        );
 
+        return $user;
     }
 
     public function save() {
-
+        if (!$this->getId()) {
+            return $this->db->query(
+                "INSERT INTO " . self::TABLE_NAME . " (email, password, name, surname, telephone_number)
+            VALUES (" . DataBase::SYM_QUERY . ", " . DataBase::SYM_QUERY . ", " . DataBase::SYM_QUERY . ", " . DataBase::SYM_QUERY . ", " . DataBase::SYM_QUERY . ")",
+                [$this->email, $this->password, $this->name, $this->surname, $this->telephoneNumber]
+            );
+        } else {
+            return $this->db->query(
+                "UPDATE " . self::TABLE_NAME . " SET password = " . DataBase::SYM_QUERY . ", name = " . DataBase::SYM_QUERY . ", surname = " . DataBase::SYM_QUERY . ", telephone_number = " . DataBase::SYM_QUERY . " WHERE id = " . DataBase::SYM_QUERY,
+                [$this->password, $this->name, $this->surname, $this->telephoneNumber, $this->id]
+            );
+        }
     }
 
+    public function apiCreate($params) {
+        $this->setName($params['name']);
+        $this->setSurname($params['surname']);
+        $this->setEmail($params['email']);
+        $this->setTelephoneNumber($params['telephone_number']);
+        $this->setPassword(password_hash($params['password'], PASSWORD_DEFAULT));
+
+        $newUserId = $this->save();
+
+        echo $newUserId;
+    }
+
+    public function apiGet($params) {
+        $user = $this->get($params['id']);
+        unset($user['password']);
+
+        echo json_encode($user);
+    }
+
+    public function apiEdit($params) {
+        $this->get($params['id']);
+        if ($this->getPassword() != $params['current_password']) {
+            echo 'Wrong password';
+
+            return;
+        }
+
+        $this->edit($params);
+    }
+
+    public function apiLogin($params) {
+        $user = $this->getByEmail($params['email']);
+        if ($user && password_verify($params['password'], $user['password'])) {
+            echo $user['id'];
+        } else {
+            echo 'FALSE';
+        }
+    }
 }
