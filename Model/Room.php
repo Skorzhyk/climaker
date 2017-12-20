@@ -34,7 +34,8 @@ class Room extends API
             'delete' => 'apiDelete',
             'edit' => 'apiEdit',
             'checkandsetclimate' => 'apiCheckAndSetClimate',
-            'get' => 'apiGet'
+            'get' => 'apiGet',
+            'getall' => 'apiGetAll'
         ];
     }
 
@@ -210,6 +211,8 @@ class Room extends API
     public function apiCreate($params) {
         $this->setName($params['name']);
         $this->setUserId($params['user_id']);
+        $this->setCustomTemperature($params['custom_temperature']);
+        $this->setCustomHumidity($params['custom_humidity']);
 
         $newRoomId = $this->save();
 
@@ -218,6 +221,14 @@ class Room extends API
 
     public function apiGet($params) {
         echo json_encode($this->get($params['id']));
+    }
+
+    public function apiGetAll($params)
+    {
+        echo json_encode($this->db->select(
+            "SELECT * FROM " . self::TABLE_NAME . " WHERE user_id = " . DataBase::SYM_QUERY,
+            [$params['user_id']]
+        ));
     }
 
     public function apiEdit($params) {

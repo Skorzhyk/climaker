@@ -29,7 +29,8 @@ class Template extends API
             'create' => 'apiCreate',
             'delete' => 'apiDelete',
             'edit' => 'apiEdit',
-            'get' => 'apiGet'
+            'get' => 'apiGet',
+            'getall' => 'apiGetAll'
         ];
     }
     /**
@@ -172,6 +173,14 @@ class Template extends API
 
     public function apiGet($params) {
         echo json_encode($this->get($params['id']));
+    }
+
+    public function apiGetAll($params)
+    {
+        echo json_encode($this->db->select(
+            "SELECT * FROM " . self::TABLE_NAME . " WHERE user_id = " . DataBase::SYM_QUERY,
+            [$params['user_id']]
+        ));
     }
 
     public function apiEdit($params) {

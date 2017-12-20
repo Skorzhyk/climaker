@@ -146,10 +146,6 @@ class User extends API
             $this->setTelephoneNumber($params['telephone_number']);
         }
 
-        if (!empty($params['email'])) {
-            $this->setEmail($params['email']);
-        }
-
         if (!empty($params['new_password'])) {
             $this->setPassword($params['new_password']);
         }
@@ -218,8 +214,9 @@ class User extends API
 
     public function apiEdit($params) {
         $this->get($params['id']);
-        if ($this->getPassword() != $params['current_password']) {
-            echo 'Wrong password';
+
+        if (!password_verify($params['current_password'], $this->getPassword())) {
+            echo 'bad';
 
             return;
         }
@@ -231,8 +228,6 @@ class User extends API
         $user = $this->getByEmail($params['email']);
         if ($user && password_verify($params['password'], $user['password'])) {
             echo $user['id'];
-        } else {
-            echo 'FALSE';
         }
     }
 }
